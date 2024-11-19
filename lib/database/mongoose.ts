@@ -1,32 +1,30 @@
-import mongoose, { Mongoose } from 'mongoose';
+import mongoose from 'mongoose';
 
-const MONGODB_URL = process.env.MONGODB_URL;
-
-interface MongooseConnection {
-  conn: Mongoose | null;
-  promise: Promise<Mongoose> | null;
-}
-
-let cached: MongooseConnection = (global as any).mongoose
-
-if(!cached) {
-  cached = (global as any).mongoose = { 
-    conn: null, promise: null 
-  }
-}
+let isConnected = false;
 
 export const connectToDatabase = async () => {
-  if(cached.conn) return cached.conn;
+  mongoose.set('strictQuery', true);
 
-  if(!MONGODB_URL) throw new Error('Missing MONGODB_URL');
+  if (!process.env.MONGODB_URL) {
+    throw new Error('MONGODB_URL is not defined');
+  }
 
-  cached.promise = 
-    cached.promise || 
-    mongoose.connect(MONGODB_URL, { 
-      dbName: 'imaginify', bufferCommands: false 
-    })
+  if (isConnected) {
+    console.log('MongoDB is already connected');
+    return;
+  }
 
-  cached.conn = await cached.promise;
+  try {
+    const options = {
+      dbName: "Imagination",
+      autoCreate: true,
+    };
 
-  return cached.conn;
-}
+    await mongoose.connect(process.env.MONGODB_URL, options);
+    isConnected = true;
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+};
